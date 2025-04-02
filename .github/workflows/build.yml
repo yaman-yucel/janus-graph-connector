@@ -26,15 +26,7 @@ jobs:
           python -m pip install tox tox-gh-actions
       - name: Test with tox
         run: tox
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
-        if: ${{ env.CODECOV_TOKEN != '' }}
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-        with:
-          token: ${{ env.CODECOV_TOKEN }}
-          slug: ardaaras99/janus-graph-connector
-
+        
   bump-version:
     needs: tox
     if: "!startsWith(github.event.head_commit.message, 'bump:')"
