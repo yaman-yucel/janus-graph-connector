@@ -17,7 +17,7 @@ async-timeout==4.0.3
 attrs==25.3.0
 babel==2.17.0
 bandit==1.8.3
-base-ontology @ git+https://github.com/ardaaras99/base-ontology.git@8954f2a0321845fcca4aad987fa87f50b09409f5
+base-ontology @ git+https://github.com/ardaaras99/base-ontology.git@1318eedb837448f0404c35c01f5400648136359b
 beautifulsoup4==4.13.3
 bleach==6.2.0
 boolean-py==4.0

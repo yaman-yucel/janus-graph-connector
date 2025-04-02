@@ -255,8 +255,8 @@ wheels = [
 
 [[package]]
 name = "base-ontology"
-version = "0.1.0"
-source = { git = "https://github.com/ardaaras99/base-ontology.git#8954f2a0321845fcca4aad987fa87f50b09409f5" }
+version = "0.2.0"
+source = { git = "https://github.com/ardaaras99/base-ontology.git#1318eedb837448f0404c35c01f5400648136359b" }
 dependencies = [
     { name = "pydantic" },
 ]
