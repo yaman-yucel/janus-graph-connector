@@ -2,9 +2,7 @@
 name = "janus-graph-connector"
 version = "0.1.0"
 description = "Python package to connect and I/O operations with janus graph."
-authors = [
-    { name = "Arda Can Aras", email = "ardaaras99@gmail.com" },
-]
+authors = [{ name = "Arda Can Aras", email = "ardaaras99@gmail.com" }]
 requires-python = ">=3.10,<3.13"
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -14,7 +12,12 @@ classifiers = [
 ]
 readme = "README.md"
 
-dependencies = []
+dependencies = [
+    "base-ontology",
+    "gremlinpython>=3.7.3",
+    "jsonschema-pydantic>=0.6",
+    "pydantic>=2.11.1",
+]
 
 [dependency-groups]
 dev = [
@@ -36,7 +39,7 @@ dev = [
 ]
 
 [tool.ruff]
-line-length = 100
+line-length = 200
 
 [tool.ruff.format]
 # Like Black
@@ -75,3 +78,6 @@ version_files = [
 ]
 major_version_zero = true
 update_changelog_on_bump = true
+
+[tool.uv.sources]
+base-ontology = { git = "https://github.com/ardaaras99/base-ontology.git" }
