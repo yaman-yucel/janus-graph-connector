@@ -34,7 +34,7 @@ if execute:
         )
 
         NODE_DICT = testClient.read_nodes(ontology_name=ontology_graph_name, version=test_ontology_version)
-        RELATION_DICT = testClient.read_relations(ontology_name=ontology_graph_name, version=test_ontology_version)
+        RELATION_DICT = testClient.read_relations(ontology_name=ontology_graph_name, version=test_ontology_version, node_dict=NODE_DICT)
 
         print(NODE_DICT)
         print(RELATION_DICT)
