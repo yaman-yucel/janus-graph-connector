@@ -11,6 +11,7 @@ from gremlin_python.process.anonymous_traversal import traversal
 from gremlin_python.process.graph_traversal import GraphTraversalSource
 from gremlin_python.process.traversal import T
 from jsonschema_pydantic import jsonschema_to_pydantic
+from pydantic import Field, create_model
 
 
 class JanusGraphClient:
@@ -97,7 +98,7 @@ class JanusGraphClient:
             print(f"An error occurred while saving schemas: {e}")
             raise
 
-    def write_relations(self, json_file_path: Path | str, ontology_name: str, version: str) -> None:
+    def write_relations_old(self, json_file_path: Path | str, ontology_name: str, version: str) -> None:
         """
         Create edges between nodes based on relationship definitions in a JSON file.
 
@@ -137,6 +138,54 @@ class JanusGraphClient:
                     g.V().hasLabel(source_node_title).has("ontology", ontology_name).has("version", version).as_("s").V().hasLabel(target_node_title).has("ontology", ontology_name).has(
                         "version", version
                     ).as_("t").addE(edge_label).from_("s").to("t").property("schema", schema_json).property("ontology", ontology_name).property("version", version).iterate()
+
+                    print(f"Created new edge between '{source_node_title}' and '{target_node_title}' with label '{edge_label}' for ontology '{ontology_name}' version '{version}'")
+
+        except Exception as e:
+            print(f"An error occurred while saving relations: {e}")
+            raise
+
+    def write_relations(self, json_file_path: Path | str, ontology_name: str, version: str) -> None:
+        """
+        Create edges between nodes based on relationship definitions in a JSON file.
+
+        Args:
+            json_file_path: Path to JSON file containing relationship definitions
+            ontology_name: Name of the ontology being inserted
+            version: Version identifier for the ontology
+        """
+        try:
+            # Read the JSON file
+            with open(json_file_path, encoding="utf-8") as f:
+                schemas_dict = json.load(f)
+
+            with self._connection() as g:
+                for edge_label, value in schemas_dict.items():
+                    # Extract schema information
+                    schema = value["schema"]
+
+                    # Extract node references
+                    source_ref = schema["properties"]["source_node"]["$ref"]
+                    target_ref = schema["properties"]["target_node"]["$ref"]
+
+                    # Get definition names
+                    source_def_name = source_ref.split("/")[-1]
+                    target_def_name = target_ref.split("/")[-1]
+
+                    # Get definitions
+                    source_def = schema["$defs"][source_def_name]
+                    target_def = schema["$defs"][target_def_name]
+
+                    # Get node titles
+                    source_node_title = source_def["title"]
+                    target_node_title = target_def["title"]
+
+                    # Create edge
+                    g.V().hasLabel(source_node_title).has("ontology", ontology_name).has("version", version).as_("s").V().hasLabel(target_node_title).has("ontology", ontology_name).has(
+                        "version", version
+                    ).as_("t").addE(edge_label).from_("s").to("t").property("source_node_title", source_node_title).property("target_node_title", target_node_title).property(
+                        "ontology", ontology_name
+                    ).property("version", version).iterate()
 
                     print(f"Created new edge between '{source_node_title}' and '{target_node_title}' with label '{edge_label}' for ontology '{ontology_name}' version '{version}'")
 
@@ -198,7 +247,7 @@ class JanusGraphClient:
             print(f"An error occurred while reading nodes: {e}")
             return None
 
-    def read_relations(self, ontology_name: str, version: str) -> dict[str, BaseRelation] | None:
+    def read_relations_old(self, ontology_name: str, version: str) -> dict[str, BaseRelation] | None:
         """
         Retrieves relations (edges) from JanusGraph for a specific ontology and version.
 
@@ -228,6 +277,53 @@ class JanusGraphClient:
                         # Process schema
                         pydantic_schema_dict = json.loads(edge["schema"])
                         pydantic_model = jsonschema_to_pydantic(pydantic_schema_dict)
+                        relation_dict[edge_name] = pydantic_model
+
+                    except Exception as schema_error:
+                        print(f"Error processing schema for relation {edge_name}: {schema_error}")
+                        continue
+
+                print(f"Successfully read {len(relation_dict)} relations from ontology '{ontology_name}' version '{version}'")
+                return relation_dict
+
+        except Exception as e:
+            print(f"An error occurred while reading relations: {e}")
+            return None
+
+    def read_relations(self, ontology_name: str, version: str, node_dict: dict[str, tuple[BaseNode, bool, str]] | None = None) -> dict[str, BaseRelation] | None:
+        """
+        Retrieves relations (edges) from JanusGraph for a specific ontology and version.
+
+        Args:
+            ontology_name: Name of the ontology to retrieve relations from
+            version: Version of the ontology to retrieve
+
+        Returns:
+            Dictionary mapping relation names to their Pydantic models
+            None if an error occurs
+        """
+        relation_dict = {}
+        if node_dict is None:
+            return None
+
+        try:
+            with self._connection() as g:
+                # Get edges with specified ontology and version
+                edges = g.E().has("ontology", ontology_name).has("version", version).elementMap().toList()
+
+                for edge in edges:
+                    edge_name = edge[T.label]
+
+                    try:
+                        pydantic_model = create_model(
+                            edge_name,  # Model name (optional but recommended)
+                            label=(str, Field(default=edge_name)),
+                            source_node=(node_dict[edge["source_node_title"]][0], Field(...)),
+                            target_node=(node_dict[edge["target_node_title"]][0], Field(...)),
+                            __base__=BaseRelation,
+                        )
+                        # pydantic_schema_dict = json.loads(edge["schema"])
+                        # pydantic_model = jsonschema_to_pydantic(pydantic_schema_dict)
                         relation_dict[edge_name] = pydantic_model
 
                     except Exception as schema_error:
